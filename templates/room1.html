@@ -93,34 +93,6 @@
             width: 100%;
         }
 
-        #admin-code-container {
-            display: block;
-            margin-top: 20px;
-            text-align: center;
-        }
-
-        #admin-code-input {
-            padding: 10px;
-            font-size: 16px;
-            width: 100px;
-            margin-right: 10px;
-        }
-
-        #admin-code-button {
-            padding: 10px;
-            font-size: 16px;
-        }
-
-        #ip-list {
-            display: none;
-            margin-top: 20px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            background-color: white;
-            overflow-y: auto;
-            max-height: 200px;
-        }
-
         @media (max-width: 600px) {
             body {
                 overflow: auto;
@@ -161,23 +133,9 @@
         <textarea id="message-input" placeholder="Type your message here..." maxlength="255" disabled></textarea>
         <div id="char-count">255 characters left</div>
         <button id="send-button" disabled>Send</button>
-        <div id="admin-code-container">
-            <input type="text" id="admin-code-input" placeholder="Admin">
-            <button id="admin-code-button">Submit</button>
-        </div>
-        <div id="ip-list">
-            <h2>IP Addresses</h2>
-            <ul id="ip-addresses">
-                <!-- IP addresses will appear here -->
-            </ul>
-        </div>
     </main>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const adminCodeContainer = document.getElementById('admin-code-container');
-            const adminCodeInput = document.getElementById('admin-code-input');
-            const adminCodeButton = document.getElementById('admin-code-button');
-            const ipList = document.getElementById('ip-list');
             const messagesContainer = document.getElementById('messages');
             const sendButton = document.getElementById('send-button');
             const messageInput = document.getElementById('message-input');
@@ -185,35 +143,6 @@
             const setUsernameButton = document.getElementById('set-username-button');
             let username = '';
             let lastUsername = '';
-
-            // Show the admin code input when the page loads
-            adminCodeContainer.style.display = 'block';
-
-            adminCodeButton.addEventListener('click', function () {
-                const code = adminCodeInput.value.trim();
-                if (code === '1598') {
-                    ipList.style.display = 'block';
-                    fetch('/ips')
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error('Network response was not ok');
-                            }
-                            return response.json();
-                        })
-                        .then(ips => {
-                            const ipAddresses = document.getElementById('ip-addresses');
-                            ipAddresses.innerHTML = '';
-                            ips.forEach(entry => {
-                                const listItem = document.createElement('li');
-                                listItem.textContent = `${entry.username} - ${entry.ip}`;
-                                ipAddresses.appendChild(listItem);
-                            });
-                        })
-                        .catch(error => console.error('Error fetching IP addresses:', error));
-                } else {
-                    alert('Invalid code');
-                }
-            });
 
             setUsernameButton.addEventListener('click', function () {
                 username = usernameInput.value.trim();

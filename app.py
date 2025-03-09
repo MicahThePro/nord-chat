@@ -10,7 +10,7 @@ socketio = SocketIO(app)
 thread = None
 thread_lock = Lock()
 
-log_dir = "/logs"
+log_dir = "logs"
 if not os.path.exists(log_dir):
     os.makedirs(log_dir)
 
@@ -53,19 +53,6 @@ def handle_join(data):
     online_users[username] = request.sid
     emit('user joined', username, broadcast=True)
     emit('load messages', list(messages), to=request.sid)  # Send the last 20 messages to the new user
-
-@socketio.on('location')
-def handle_location(location):
-    ip = request.remote_addr
-    log_data = {
-        'ip': ip,
-        'latitude': location['latitude'],
-        'longitude': location['longitude']
-    }
-    log_file = os.path.join(log_dir, f"{ip}.json")
-    with open(log_file, 'w') as f:
-        json.dump(log_data, f)
-    print(f"Location logged for IP {ip}: {log_data}")
 
 @socketio.on('message')
 def handle_message(msg):
