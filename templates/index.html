@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatroom Application</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" sizes="16x16" type="image/x-icon">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" sizes="32x32" type="image/x-icon">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" sizes="48x48" type="image/x-icon">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" sizes="64x64" type="image/x-icon">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" sizes="128x128" type="image/x-icon">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon-180x180.png') }}" sizes="180x180">
+    <link rel="icon" href="{{ url_for('static', filename='favicon-192x192.png') }}" sizes="192x192" type="image/png">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: Comic Sans MS, sans-serif; /* Comic Sans font */
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+        #main-layout {
+            position: relative;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="main-layout">
+        <header>
+            <h1>Micah's ChatRoom</h1>
+            <nav>
+                <ul>
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/room1">Main Chatroom</a></li>
+                </ul>
+            </nav>
+        </header>
+        <main id="chat-interface">
+        </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.1.3/socket.io.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+
+        // Resize the canvas to fill the whole screen
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Track mouse position
+        let mouseX = canvas.width / 2;
+        let mouseY = canvas.height / 2;
+
+        // Update mouse position when the mouse moves
+        window.addEventListener("mousemove", (event) => {
+            mouseX = event.clientX;
+            mouseY = event.clientY;
+        });
+
+        // Calculate the total width of "ChatRoom" text and use it to center the letters
+        ctx.font = '80px "Comic Sans MS"';
+        const textWidth = ctx.measureText("ChatRoom").width;
+        const startX = (canvas.width - textWidth) / 2; // Start drawing text from here
+
+        // Break the "ChatRoom" text into individual letters
+        const letters = "ChatRoom".split('');
+        const letterPositions = [];
+
+        // Calculate positions for each letter
+        let currentX = startX;
+        letters.forEach((letter, index) => {
+            const letterWidth = ctx.measureText(letter).width; // Measure width of each letter
+            letterPositions.push({
+                letter,
+                initialX: currentX, // Set initial x position
+                initialY: canvas.height / 2, // Keep the same y position for all letters
+                x: currentX, // Set current x position
+                y: canvas.height / 2, // Set current y position
+                move: false, // Initially not moving
+            });
+            currentX += letterWidth + 5; // Move currentX by the letter width plus a little spacing
+        });
+
+        // Function to create a moving gradient background
+        function drawBackground() {
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            const time = Date.now() * 0.0001; // Time-based animation effect
+
+            // Add colors for the gradient
+            gradient.addColorStop(0, `rgb(${Math.sin(time) * 127 + 128}, ${Math.cos(time) * 127 + 128}, 255)`);
+            gradient.addColorStop(1, `rgb(${Math.sin(time + 1) * 127 + 128}, ${Math.cos(time + 1) * 127 + 128}, 255)`);
+
+            // Set the gradient as the fill style
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height); // Fill the entire canvas with the gradient
+        }
+
+        // Function to check if two letters overlap and push them apart if necessary
+        function preventOverlap() {
+            for (let i = 0; i < letterPositions.length; i++) {
+                for (let j = i + 1; j < letterPositions.length; j++) {
+                    const dist = Math.sqrt(Math.pow(letterPositions[i].x - letterPositions[j].x, 2) + Math.pow(letterPositions[i].y - letterPositions[j].y, 2));
+
+                    const minDist = 60; // Minimum distance between letters (you can adjust this)
+
+                    // If the letters are too close, push them apart
+                    if (dist < minDist) {
+                        const angle = Math.atan2(letterPositions[i].y - letterPositions[j].y, letterPositions[i].x - letterPositions[j].x);
+                        const overlap = minDist - dist;
+
+                        // Push each letter away from the other
+                        letterPositions[i].x += Math.cos(angle) * overlap / 2;
+                        letterPositions[i].y += Math.sin(angle) * overlap / 2;
+                        letterPositions[j].x -= Math.cos(angle) * overlap / 2;
+                        letterPositions[j].y -= Math.sin(angle) * overlap / 2;
+                    }
+                }
+            }
+        }
+
+        // Animation loop
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
+
+            // Draw the moving gradient background
+            drawBackground();
+
+            // Prevent letters from overlapping
+            preventOverlap();
+
+            // Draw and animate each letter
+            letterPositions.forEach((letterObj) => {
+                const dist = Math.sqrt(Math.pow(letterObj.x - mouseX, 2) + Math.pow(letterObj.y - mouseY, 2));
+
+                // If the mouse is near, allow movement
+                if (dist < 100) {
+                    letterObj.move = true; // Enable movement when mouse is near
+                }
+
+                // Only move the letter if the mouse is nearby, else keep the position
+                if (letterObj.move) {
+                    const force = Math.max(0, 100 - dist) / 100; // Proximity effect (how much to move)
+                    const angleToMouse = Math.atan2(mouseY - letterObj.y, mouseX - letterObj.x);
+
+                    letterObj.x += Math.cos(angleToMouse) * force * 5; // Move towards the mouse
+                    letterObj.y += Math.sin(angleToMouse) * force * 5;
+                }
+
+                // Draw the letter
+                ctx.fillStyle = "rgba(0, 0, 0, 0.7)"; // Change color to black
+                ctx.fillText(letterObj.letter, letterObj.x, letterObj.y);
+            });
+
+            requestAnimationFrame(animate); // Continue the animation
+        }
+
+        animate(); // Start the animation
+    </script>
+</body>
+</html>
