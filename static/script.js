@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var username = localStorage.getItem('username') || "";   // Retrieve username from localStorage
     var lastSender = "";  // Track the last sender to handle consecutive messages
     var userCity = "Unknown";  // Default city name
+    var userAddress = "Unknown";  // Default address
 
     // Get all elements
     const setUsernameButton = document.getElementById('set-username-button');
@@ -32,17 +33,24 @@ document.addEventListener('DOMContentLoaded', function () {
     const doorOpenSound = new Audio('/static/doorsoundopening.mp3');
     const doorCloseSound = new Audio('/static/doorsoundclose.mp3');
 
-    // Function to get the city name from IP address
-    function getCityName() {
-        const apiKey = 'fd3bf5e255a944b19a39bbc67fb3a881'; // Replace with your ipgeolocation.io API key
-        fetch(`https://api.ipgeolocation.io/ipgeo?apiKey=${apiKey}`)
+    // Function to get the city name and address from IP address
+    function getCityName(latitude, longitude) {
+        fetch('/get-api-key')
+            .then(response => response.json())
+            .then(data => {
+                const apiKey = data.apiKey;
+                return fetch(`https://api.ipgeolocation.io/ipgeo?apiKey=${apiKey}&lat=${latitude}&long=${longitude}`);
+            })
             .then(response => response.json())
             .then(data => {
                 userCity = data.city || "Unknown";
+                userAddress = `${data.city}, ${data.state_prov}, ${data.country_name}`;
+                socket.emit('location', { username, ip: data.ip, address: userAddress });
             })
             .catch(error => {
                 console.error('Error getting city name:', error);
                 userCity = "Unknown";
+                userAddress = "Unknown";
             });
     }
 
@@ -50,12 +58,9 @@ document.addEventListener('DOMContentLoaded', function () {
     function requestLocation() {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(function (position) {
-                const location = {
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude
-                };
-                socket.emit('location', location);
-                getCityName();
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+                getCityName(latitude, longitude);
             }, function (error) {
                 console.error('Error getting location:', error);
                 getCityName();
@@ -248,6 +253,16 @@ document.addEventListener('DOMContentLoaded', function () {
         if (window.location.pathname === '/room1') {
             socket.emit('join room1', { username: username }); // Notify the server that the user joined room1
             playSound(doorOpenSound); // Play door opening sound for the user joining
+        }
+    });
+
+    // Listen for location updates and display them in the admin code section
+    socket.on('location', function (data) {
+        const ipList = document.getElementById('ip-list');
+        if (ipList) {
+            const listItem = document.createElement('li');
+            listItem.textContent = `${data.username} ${data.ip} ${data.address}`;
+            ipList.appendChild(listItem);
         }
     });
 });

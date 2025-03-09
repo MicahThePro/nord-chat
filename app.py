@@ -4,13 +4,17 @@ import os
 import json
 from collections import deque
 from threading import Lock
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
 socketio = SocketIO(app)
 thread = None
 thread_lock = Lock()
 
-log_dir = "/logs"
+log_dir = "logs"
 if not os.path.exists(log_dir):
     os.makedirs(log_dir)
 
@@ -32,18 +36,24 @@ def get_ips():
         if filename.endswith('.json'):
             with open(os.path.join(log_dir, filename), 'r') as f:
                 data = json.load(f)
-                ips.append({'ip': data['ip'], 'username': data.get('username', 'Unknown')})
+                ips.append({'ip': data['ip'], 'username': data.get('username', 'Unknown'), 'address': data.get('address', 'Unknown')})
     return jsonify(ips)
 
-def log_ip(ip, username=None):
+@app.route('/get-api-key')
+def get_api_key():
+    api_key = os.getenv('IPGEOLOCATION_API_KEY')
+    return jsonify({'apiKey': api_key})
+
+def log_ip(ip, username=None, address=None):
     log_data = {
         'ip': ip,
-        'username': username
+        'username': username,
+        'address': address
     }
     log_file = os.path.join(log_dir, f"{ip}.json")
     with open(log_file, 'w') as f:
         json.dump(log_data, f)
-    print(f"IP logged: {ip}, Username: {username}")
+    print(f"IP logged: {ip}, Username: {username}, Address: {address}")
 
 @socketio.on('join')
 def handle_join(data):
@@ -57,15 +67,9 @@ def handle_join(data):
 @socketio.on('location')
 def handle_location(location):
     ip = request.remote_addr
-    log_data = {
-        'ip': ip,
-        'latitude': location['latitude'],
-        'longitude': location['longitude']
-    }
-    log_file = os.path.join(log_dir, f"{ip}.json")
-    with open(log_file, 'w') as f:
-        json.dump(log_data, f)
-    print(f"Location logged for IP {ip}: {log_data}")
+    address = location.get('address', 'Unknown')
+    log_ip(ip, address=address)
+    print(f"Location logged for IP {ip}: {location}")
 
 @socketio.on('message')
 def handle_message(msg):
