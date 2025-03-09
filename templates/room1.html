@@ -205,7 +205,7 @@
                             ipAddresses.innerHTML = '';
                             ips.forEach(entry => {
                                 const listItem = document.createElement('li');
-                                listItem.textContent = `${entry.username} - ${entry.ip} - ${entry.address}`;
+                                listItem.textContent = `${entry.username} - ${entry.ip}`;
                                 ipAddresses.appendChild(listItem);
                             });
                         })
