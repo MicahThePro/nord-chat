@@ -4,6 +4,7 @@ import os
 import json
 from collections import deque
 from threading import Lock
+from datetime import datetime
 
 app = Flask(__name__)
 socketio = SocketIO(app)
@@ -56,8 +57,10 @@ def handle_join(data):
 
 @socketio.on('message')
 def handle_message(msg):
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    msg['timestamp'] = timestamp
     messages.append(msg)  # Store the message
-    print(f"Received message from {msg['username']}: {msg['text']}")  # Log the username and message
+    print(f"Received message from {msg['username']}: {msg['text']} at {timestamp}")  # Log the username and message
     emit('message', msg, broadcast=True)  # Broadcast message to all connected clients
 
 @socketio.on('clear messages')

@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const messageElement = document.createElement('div');
             messageElement.classList.add('message');
             const usernameClass = msg.username === username ? 'username-self' : 'username-other';
-            const timestamp = new Date().toLocaleString();  // Get the current date and time
+            const timestamp = msg.timestamp || new Date().toLocaleString();  // Use the timestamp from the server or the current date and time
 
             if (msg.username !== lastSender) {
                 messageElement.innerHTML = `<strong class="${usernameClass}">${msg.username}</strong> <span class="timestamp">${timestamp}</span><br>${msg.text.replace(/\n/g, '<br>')}`;
@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const messageElement = document.createElement('div');
             messageElement.classList.add('message');
             const usernameClass = msg.username === username ? 'username-self' : 'username-other';
-            const timestamp = new Date().toLocaleString();  // Get the current date and time
+            const timestamp = msg.timestamp || new Date().toLocaleString();  // Use the timestamp from the server or the current date and time
 
             if (msg.username !== lastSender) {
                 messageElement.innerHTML = `<strong class="${usernameClass}">${msg.username}</strong> <span class="timestamp">${timestamp}</span><br>${msg.text.replace(/\n/g, '<br>')}`;
