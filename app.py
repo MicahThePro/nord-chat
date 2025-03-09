@@ -10,7 +10,7 @@ socketio = SocketIO(app)
 thread = None
 thread_lock = Lock()
 
-log_dir = "C:/Users/micah/OneDrive/Desktop/Desktop Files/Working Chat/logs"
+log_dir = "/logs"
 if not os.path.exists(log_dir):
     os.makedirs(log_dir)
 
