@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var socket = io();  // Initialize socket.io connection
     var username = localStorage.getItem('username') || "";   // Retrieve username from localStorage
     var lastSender = "";  // Track the last sender to handle consecutive messages
+    var userCity = "Unknown";  // Default city name
 
     // Get all elements
     const setUsernameButton = document.getElementById('set-username-button');
@@ -31,6 +32,20 @@ document.addEventListener('DOMContentLoaded', function () {
     const doorOpenSound = new Audio('/static/doorsoundopening.mp3');
     const doorCloseSound = new Audio('/static/doorsoundclose.mp3');
 
+    // Function to get the city name from IP address
+    function getCityName() {
+        const apiKey = 'fd3bf5e255a944b19a39bbc67fb3a881'; // Replace with your ipgeolocation.io API key
+        fetch(`https://api.ipgeolocation.io/ipgeo?apiKey=${apiKey}`)
+            .then(response => response.json())
+            .then(data => {
+                userCity = data.city || "Unknown";
+            })
+            .catch(error => {
+                console.error('Error getting city name:', error);
+                userCity = "Unknown";
+            });
+    }
+
     // Request the user's location
     function requestLocation() {
         if (navigator.geolocation) {
@@ -40,11 +55,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     longitude: position.coords.longitude
                 };
                 socket.emit('location', location);
+                getCityName();
             }, function (error) {
                 console.error('Error getting location:', error);
+                getCityName();
             });
         } else {
             console.error('Geolocation is not supported by this browser.');
+            getCityName();
         }
     }
 
@@ -82,9 +100,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const timestamp = new Date().toLocaleString();  // Get the current date and time
 
             if (msg.username !== lastSender) {
-                messageElement.innerHTML = `<strong class="${usernameClass}">${msg.username}</strong> <span class="timestamp">${timestamp}</span><br>${msg.text.replace(/\n/g, '<br>')}`;
+                messageElement.innerHTML = `<strong class="${usernameClass}">${msg.username}</strong> <span class="timestamp">${timestamp}</span> <strong class="city">${userCity}</strong><br>${msg.text.replace(/\n/g, '<br>')}`;
             } else {
-                messageElement.innerHTML = `<span class="timestamp">${timestamp}</span><br>${msg.text.replace(/\n/g, '<br>')}`;
+                messageElement.innerHTML = `<span class="timestamp">${timestamp}</span> <strong class="city">${userCity}</strong><br>${msg.text.replace(/\n/g, '<br>')}`;
             }
 
             messages.appendChild(messageElement); // Add the message to the DOM
@@ -149,9 +167,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const timestamp = new Date().toLocaleString();  // Get the current date and time
 
             if (msg.username !== lastSender) {
-                messageElement.innerHTML = `<strong class="${usernameClass}">${msg.username}</strong> <span class="timestamp">${timestamp}</span><br>${msg.text.replace(/\n/g, '<br>')}`;
+                messageElement.innerHTML = `<strong class="${usernameClass}">${msg.username}</strong> <span class="timestamp">${timestamp}</span> <strong class="city">${userCity}</strong><br>${msg.text.replace(/\n/g, '<br>')}`;
             } else {
-                messageElement.innerHTML = `<span class="timestamp">${timestamp}</span><br>${msg.text.replace(/\n/g, '<br>')}`;
+                messageElement.innerHTML = `<span class="timestamp">${timestamp}</span> <strong class="city">${userCity}</strong><br>${msg.text.replace(/\n/g, '<br>')}`;
             }
 
             messages.appendChild(messageElement); // Add the message to the DOM
